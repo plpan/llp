@@ -1,5 +1,5 @@
-loop
-loop.o
+map_daemon
+map_daemon.o
 
-loop_segfault
-loop_segfault.o
+map_segfault
+map_segfault.o
