@@ -1,0 +1,5 @@
+loop
+loop.o
+
+loop_segfault
+loop_segfault.o
