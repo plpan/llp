@@ -7,10 +7,6 @@ ${MAP_DAEMON}: ${MAP_DAEMON}.asm
 
 map: ${MAP_DAEMON}
 	./${MAP_DAEMON} & # 后台运行，执行 cat /proc/$$PID/maps 查看进程maps信息
-	# TODO make this work
-	#PID=$(shell ps -ef | grep ${MAP_DAEMON} | awk '{print $$2}')
-	#cat /proc/${PID}/maps
-
 
 ${MAP_SEGFAULT}: ${MAP_SEGFAULT}.asm
 	nasm -felf64 ${MAP_SEGFAULT}.asm -o ${MAP_SEGFAULT}.o
