@@ -3,3 +3,6 @@ map_daemon.o
 
 map_segfault
 map_segfault.o
+
+map_mapping
+map_mapping.o
