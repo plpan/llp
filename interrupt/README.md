@@ -49,3 +49,53 @@
 		- 如果描述符类型字段将其定义为中断门，IF会被清零(否则，无法保证中断处理程序去执行，因为可能被其他中断处理程序抢占)；若是陷阱门，则不会被清零，这样就允许嵌套中断处理
 		- 中断处理程序处理完毕之后，调用iretq指令返回，恢复栈中保存的所有寄存其
 			- 注意，call指令只会恢复rip寄存器
+
+3. 系统调用
+- 系统调用是操作系统提供给用户执行更高权限指令的函数
+- 系统调用方式
+	- 中断：0x80中断号是unix类w操作系统的系统调用，但是很慢，因为还需要去访问中断描述符表IDT
+	- syscall和sysret：系统调用指令。与中断的差异在于：
+		- 特权只会在ring0和ring3之间奇幻
+		- 所有系统调用都是别同一个入口进行处理；而每一个中断号都对应了一个中断处理函数
+		- 一些寄存器会被隐式调用
+			- rcx用来存储之前的rip
+			- r11用来存储之前的rflags
+- 特殊模块寄存器
+	- 系统调用过程中会使用一些特殊模块集群器，具体操作方式有两类：
+		- rdmsr：接受ecx寄存器中的MSR编号，在eax中返回寄存器的值
+		- wrmsr：接受ecx寄存器中的MSR编号，并将edx:eax的值写入这个特殊的寄存器
+- syscall和sysret
+	- syscall指令依赖于几个特殊的MSR集群器
+		- STAR（编号0xC0000081）：该寄存器持有两对cs和ss寄存器的值，其中一对是为syscall准备，还有一对是为sysret准备
+		- LSTAR（编号0xC0000082）：系统调用处理器的地址
+		- SFMASK（编号0xC0000084）：rflags寄存器对应的那些位需要被系统调用清零
+	- 系统调用的步骤：
+		- 从STAR加载对应的ss值
+		- 根据SFMASK修改rflags寄存器的值
+		- 保存rip到rcx
+		- 用LSTAR修改rip的值，并从STAR中取得新的cs和ss的值
+	- 系统调用处理命令有sysret标志的结束，并从STAR中恢复cs和ss的值，并将rcx的值恢复给rip
+	- 系统调用时段选择器的处理
+		- 当段选择器发生变化是，需要从GDT中读取对应的值，并将其保存至对应的shadow寄存器
+		- 然而在执行syscall的时候，这些shadow会家在固定的值，不会从GDT中读取
+			- cs shadow寄存器
+				- Base = 0
+				- Limit = FFFFFH
+				- Type = 112 (can be executed, was accessed)
+				- S = 1 (system)
+				- DPL = 0
+				- P = 1
+				- L = 1
+				- D = 0
+				- G = 1 (always the case in long mode)
+			- 当CPL（当前特权级别）被设置为0时，ss shadow寄存器
+				- Base = 0
+				- Limit = FFFFFH
+				- Type = 112
+				- S = 1
+				- DPL = 0
+				- P = 1
+				- L = 1
+				- D = 1 (diffs here)
+				- G = 1
+		为了支持syscall，GDT需要为代码和数据存储这两个描述符
