@@ -1,2 +1,4 @@
 volatile
-long_jmp
+longjmp
+longjmp_volatile_O0
+longjmp_volatile_O2

@@ -74,3 +74,9 @@
 	- 使用jmp_buf来存储上下文信息
 	- int setjmp(jmp_buf env)，接受一个jmp_buf实例，并将当前的上下文存储在这个实例中，默认情况下会返回0
 	- void longjmp(jmp_buf env, val int)恢复保存的上下文，上下文保存在jmp_buf中
+- 注意
+	- 没有被volatile标记的局部变量在longjmp之后会持有一个未定义的值(基本上就是初始值)，当关闭gcc优化时，会改变这个行为，并导致bug
+		- setjmp的使用也使动态分配的内存销毁也难以得到保证
+	- longjmp是建立在栈帧的基础之上，如果条用longjmp之前，setjmp所在的栈帧已经被销毁，那么行为将会变为未定义
+		- 因此，setjmp必须和longjmp在同一栈帧中，或者longjmp在setjmp的子栈帧中
+	- 编译器认为setjmp是一个函数，然而它并非是一个函数，而是一个程序可是开始执行的点
